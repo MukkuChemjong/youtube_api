@@ -83,4 +83,21 @@ class UserProfile(models.Model):
         self.total_channels_added = self.user.whitelisted_channels.filter(is_active==True).count()
         self.save(update_fields=['total_channels_added'])
     
+    class ChannelCategory(models.Model):
+        name = models.CharField(max_length=20)
+        user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='channel_category')
+        channels = models.ManyToManyField(ChannelWhitelist, on_delete=models.CASCADE, related_name='categories')
+        created_at = models.DateTimeField(auto_now_add=True)
+        
+        class Meta:
+            verbose_name = ['Channel Category']
+            verbose_name_plural = ['Channel Categories']
+            unique_together = ['name', 'user']
+            ordering = ['name']
+            
+        def __str__(self):
+            return f'{self.name} - {self.user.username}'
+        
+        def TotalChannels(self):
+            return self.channels.filter(is_active==True).count()
     
