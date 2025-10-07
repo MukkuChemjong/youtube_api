@@ -83,21 +83,63 @@ class UserProfile(models.Model):
         self.total_channels_added = self.user.whitelisted_channels.filter(is_active==True).count()
         self.save(update_fields=['total_channels_added'])
     
-    class ChannelCategory(models.Model):
-        name = models.CharField(max_length=20)
-        user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='channel_category')
-        channels = models.ManyToManyField(ChannelWhitelist, on_delete=models.CASCADE, related_name='categories')
-        created_at = models.DateTimeField(auto_now_add=True)
-        
-        class Meta:
-            verbose_name = ['Channel Category']
-            verbose_name_plural = ['Channel Categories']
-            unique_together = ['name', 'user']
-            ordering = ['name']
-            
-        def __str__(self):
-            return f'{self.name} - {self.user.username}'
-        
-        def TotalChannels(self):
-            return self.channels.filter(is_active==True).count()
+class ChannelCategory(models.Model):
+    name = models.CharField(max_length=20)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='channel_category')
+    channels = models.ManyToManyField(ChannelWhitelist, on_delete=models.CASCADE, related_name='categories')
+    created_at = models.DateTimeField(auto_now_add=True)
     
+    class Meta:
+        verbose_name = ['Channel Category']
+        verbose_name_plural = ['Channel Categories']
+        unique_together = ['name', 'user']
+        ordering = ['name']
+        
+    def __str__(self):
+        return f'{self.name} - {self.user.username}'
+    
+    def TotalChannels(self):
+        return self.channels.filter(is_active==True).count()
+
+class SyncLogs(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='synclogs')
+    
+    sync_type = models.CharField(
+        max_length=50, 
+        choices=[
+            ('full', 'Fully Sync'),
+            ('partial', 'Partially Sync'),
+            ('pull_extension', 'Pull Extension'),
+            ('push_extentsion', 'Push Extension'),
+            ('api_update', 'Api Update')
+        ])
+    
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('success', 'Success'),
+            ('pending', 'Pending'),
+            ('failed', 'Failed'),
+        ],
+        default='pending'
+    )
+    
+    channels_synced = models.IntegerField(default=0)
+    channels_added = models.IntegerField(default=0)
+    channels_deleted = models.IntegerField(default=0)
+    error_message = models.TextField(max_length=20)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.CharField(max_length=500, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['timestamp']
+        verbose_name = ['Sync Log']
+        verbose_name_plural =  ['Sync Logs']
+        indexes = [
+            models.Index(fields=['user', 'timestamp']),
+            models.Index(fields=['status'])
+        ]
+    
+    def __str__(self):
+        return f'{self.user.username} - {self.sync_type} - {self.status}'
