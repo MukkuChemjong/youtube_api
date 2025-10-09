@@ -20,16 +20,15 @@ class ChannelWhitelist(models.Model):
     
     #Status & Timestamps
     is_active = models.BooleanField(default=False)
-    last_added = models.DateTimeField(auto_now_add=True)
+    date_added = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
-    checked_api = models.DateTimeField(blank=True, null=True, help_text='Last time channel was check with youtbe API')
     
     class Meta:
         ordering = ['-date_added']
         verbose_name = ['Whitelisted_Channel']
         verbose_name_plural =  ['Whitelisted_Channels']
         unique_together = ['user', 'channel_id']
-        indexex = [
+        indexes= [
             models.Index(fields=['channel_id']),
             models.Index(fields=['user', 'is_active']),
             models.Index(fields=['date_added'])
