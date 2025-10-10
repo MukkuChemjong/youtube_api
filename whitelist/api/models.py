@@ -4,16 +4,16 @@ from django.utils import timezone
 
 class ChannelWhitelist(models.Model):
     #Channel Info
-    channel_id = models.CharField(max_length=100, unique=True)
+    channel_id = models.CharField(max_length=100)
     channel_name = models.CharField(max_length=200)
     channel_url = models.URLField(max_length=100, blank=True)
-    
+     
     #Visual Info
-    thumbnail_url = models.URLField()
+    thumbnail_url = models.URLField(blank=True)
     
     #Channel Metadata
     subscriber_count = models.IntegerField(blank=True, null=True)
-    videos_count = models.CharField(blank=True, null=True)
+    videos_count = models.IntegerField(blank=True, null=True)
     
     #User
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='whitelisted_channels')
@@ -25,8 +25,8 @@ class ChannelWhitelist(models.Model):
     
     class Meta:
         ordering = ['-date_added']
-        verbose_name = ['Whitelisted_Channel']
-        verbose_name_plural =  ['Whitelisted_Channels']
+        verbose_name = 'Whitelisted_Channel'
+        verbose_name_plural =  'Whitelisted_Channels'
         unique_together = ['user', 'channel_id']
         indexes= [
             models.Index(fields=['channel_id']),
@@ -43,7 +43,7 @@ class ChannelWhitelist(models.Model):
         
 class UserProfile(models.Model):
     #User
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='whitelisted_channels')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='whitelist_profile')
     
     #Extension Settings
     strict_mode = models.BooleanField(default=False, help_text='If true hide all whiteslited channels, if false highlight them')
@@ -75,22 +75,22 @@ class UserProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = ['User Profile']
-        verbose_name_plural = ['User Profiles']
+        verbose_name = 'User Profile'
+        verbose_name_plural = 'User Profiles'
     
     def updatedTotalChannelsAdded(self):
-        self.total_channels_added = self.user.whitelisted_channels.filter(is_active==True).count()
+        self.total_channels_added = self.user.whitelisted_channels.filter(is_active=True).count()
         self.save(update_fields=['total_channels_added'])
     
 class ChannelCategory(models.Model):
     name = models.CharField(max_length=20)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='channel_category')
-    channels = models.ManyToManyField(ChannelWhitelist, on_delete=models.CASCADE, related_name='categories')
+    channels = models.ManyToManyField(ChannelWhitelist, related_name='categories', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        verbose_name = ['Channel Category']
-        verbose_name_plural = ['Channel Categories']
+        verbose_name = 'Channel Category'
+        verbose_name_plural = 'Channel Categories'
         unique_together = ['name', 'user']
         ordering = ['name']
         
@@ -98,7 +98,7 @@ class ChannelCategory(models.Model):
         return f'{self.name} - {self.user.username}'
     
     def TotalChannels(self):
-        return self.channels.filter(is_active==True).count()
+        return self.channels.filter(is_active=True).count()
 
 class SyncLogs(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='synclogs')
@@ -126,15 +126,15 @@ class SyncLogs(models.Model):
     channels_synced = models.IntegerField(default=0)
     channels_added = models.IntegerField(default=0)
     channels_deleted = models.IntegerField(default=0)
-    error_message = models.TextField(max_length=20)
+    error_message = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(blank=True, null=True)
     user_agent = models.CharField(max_length=500, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         ordering = ['timestamp']
-        verbose_name = ['Sync Log']
-        verbose_name_plural =  ['Sync Logs']
+        verbose_name = 'Sync Log'
+        verbose_name_plural =  'Sync Logs'
         indexes = [
             models.Index(fields=['user', 'timestamp']),
             models.Index(fields=['status'])
